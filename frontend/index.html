@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Client</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      .container {
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      #join input[type="text"] {
+        width: 300px;
+        padding: 4px;
+        font-size: 18px;
+      }
+      #join input[type="submit"] {
+        /* width: 300px; */
+        padding: 4px 6px;
+        cursor: pointer;
+        font-size: 18px;
+      }
+      #box {
+        display: none;
+        height: 70vh;
+        width: 300px;
+      }
+      #chat_box {
+        height: 86%;
+        background-color: #6035045f;
+        overflow-y: auto;
+        padding: 10px 4px;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .msg_box #send_msg {
+        display: flex;
+      }
+      .msg_box input {
+        width: 100%;
+        height: 40px;
+        padding: 4px;
+        font-size: 16px;
+        outline: none;
+      }
+      .msg_box button {
+        padding: 8px;
+        cursor: pointer;
+      }
+      .received {
+        margin: 3px 0;
+        font-size: 18px;
+        background-color: #ffffff9a;
+        display: inline;
+        min-width: 20px;
+        max-width: 90%;
+        padding: 6px;
+        border-radius: 0px 10px 10px 10px;
+      }
+      .sent {
+        align-self: flex-end;
+        margin: 3px 0;
+        font-size: 18px;
+        background-color: #1ef19973;
+        display: inline;
+        min-width: 20px;
+        max-width: 90%;
+        padding: 6px;
+        border-radius: 10px 0 10px 10px;
+      }
+      .new_mem {
+        margin: 3px 0;
+        align-self: center;
+        font-size: 12px;
+        font-style: italic;
+        text-decoration: underline;
+        color: #000;
+      }
+      #count_box {
+        display: block;
+        padding: 6px;
+        background-color: #000;
+        color: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- enter your name to join -->
+      <form id="join">
+        <input type="text" id="name" placeholder="Enter name" required />
+        <input type="submit" value="JOIN" />
+      </form>
+
+      <!-- chat box -->
+      <div id="box">
+        <span id="count_box"
+          >Total members : <span id="mem_count">3</span>
+        </span>
+        <div id="chat_box"></div>
+        <div class="msg_box">
+          <form id="send_msg">
+            <input
+              type="text"
+              id="msg"
+              placeholder="Your text here..."
+              required
+            />
+            <button type="submit">
+              <i class="fa-solid fa-share"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script
+      src="https://cdn.socket.io/4.6.0/socket.io.min.js"
+      integrity="sha384-c79GN5VsunZvi+Q/WObgk2in0CbZsHnjEqvFxC5DxHn9lTfNce2WW6h2pH6u/kF+"
+      crossorigin="anonymous"
+    ></script>
+
+    <script>
+      const socket = io("http://localhost:3000", { transports: ["websocket"] });
+      const join_form = document.getElementById("join");
+      const chat_box = document.getElementById("box");
+      const display_box = document.getElementById("chat_box");
+      const send_msg = document.getElementById("send_msg");
+      const total_mem = document.getElementById("mem_count");
+
+      display_box.scrollTop = 0;
+
+      // entering the chat
+      join_form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        chat_box.style.display = "block";
+        join_form.style.display = "none";
+        const user_name = join_form.name.value;
+        socket.emit("joined", user_name);
+      });
+
+      // new joining
+      socket.on("new_member", (member) => {
+        const received_msg = document.createElement("p");
+        received_msg.textContent = member;
+        received_msg.setAttribute("class", "new_mem");
+        display_box.append(received_msg);
+        send_msg.msg.value = "";
+      });
+
+      // sending message
+      send_msg.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const message = send_msg.msg.value;
+        const received_msg = document.createElement("p");
+        received_msg.textContent = send_msg.msg.value;
+        received_msg.setAttribute("class", "sent");
+        display_box.append(received_msg);
+        send_msg.msg.value = "";
+        socket.emit("receive", message);
+      });
+
+      socket.on("new_received", (res) => {
+        const received_msg = document.createElement("p");
+        received_msg.textContent = res;
+        received_msg.setAttribute("class", "received");
+        display_box.append(received_msg);
+      });
+
+      // total no. of users online
+      socket.on("total_online", (res) => {
+        total_mem.textContent = res
+      })
+    </script>
+  </body>
+</html>
